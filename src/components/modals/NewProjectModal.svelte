@@ -71,7 +71,7 @@
     <span class="lab">Dossier</span>
     <div class="row">
       <!-- svelte-ignore a11y_autofocus -->
-      <input class="field mono" style="flex:1;font-size:12.5px" bind:value={path} placeholder="C:\chemin\vers\le\projet" autofocus />
+      <input class="field mono" style="flex:1;font-size:12.5px" bind:value={path} placeholder="/Users/toi/chemin/vers/le/projet" autofocus />
       <button class="btn" style="height:36px" onclick={browse}>Parcourir…</button>
     </div>
     <span class="git mono" style:color={gitLine.color}><span class="d" style:background={gitLine.color}></span>{gitLine.text}</span>

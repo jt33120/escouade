@@ -60,7 +60,7 @@
       <input
         class="field mono"
         bind:value={s.claudePath}
-        placeholder={app.claudeFound ? 'claude (trouvé dans le PATH)' : 'introuvable — indique le chemin de claude.exe'}
+        placeholder={app.claudeFound ? 'claude (trouvé dans le PATH)' : 'introuvable — indique le chemin de claude'}
       />
     </label>
     <div class="f">
