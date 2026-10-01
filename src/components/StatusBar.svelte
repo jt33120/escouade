@@ -4,6 +4,7 @@
   import { menu } from '../lib/menu.svelte';
   import { ESTIMATE_HINT, fSpentUsd } from '../lib/spend';
   import { app } from '../lib/state.svelte';
+  import { VOICE_LABELS, voice } from '../lib/voice.svelte';
 
   const agents = $derived(Object.values(app.agents).filter((a) => !a.archived));
   const running = $derived(agents.filter((a) => a.status === 'running').length);
@@ -149,6 +150,14 @@
     </button>
   {/if}
   <div style="flex:1"></div>
+  {#if voice.supported && voice.state !== 'off'}
+    <span
+      class="it voice"
+      class:live={voice.state !== 'idle'}
+      title={app.settings.voiceHandsFree ? 'Mode vocal mains libres : dis « Escouade » pour dicter' : `Mode vocal : maintiens ${app.settings.voiceShortcut} pour dicter`}
+      ><span class="vdot"></span>{VOICE_LABELS[voice.state]}</span
+    >
+  {/if}
   {#if app.update}
     <button
       class="upd"
@@ -244,6 +253,18 @@
   .small:hover {
     background: var(--elev2);
     color: var(--text);
+  }
+  .voice {
+    color: var(--dim);
+  }
+  .voice.live {
+    color: var(--accent);
+  }
+  .vdot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
   }
   .upd {
     height: 22px;

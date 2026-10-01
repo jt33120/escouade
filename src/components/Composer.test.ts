@@ -1,8 +1,10 @@
 import { createEvent, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
+import { emit } from '@tauri-apps/api/event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { conversationOf } from '../lib/conversations.svelte';
 import { app } from '../lib/state.svelte';
+import { initVoice } from '../lib/voice.svelte';
 import { agent, fakeBackend, resetApp } from '../test/ipc';
 import Composer from './Composer.svelte';
 
@@ -439,5 +441,28 @@ describe('Composer in a narrow column (split layout)', () => {
     expect(stop).not.toHaveTextContent('Stop');
     // Claude takes a message sent during a turn at its next step: it is sent, not queued.
     expect(screen.getByRole('button', { name: 'Envoyer' })).toBeInTheDocument();
+  });
+
+  it('takes dictation from the voice backend and sends it with the screen frames', async () => {
+    const { a, textarea } = setup();
+    const backend = fakeBackend({
+      voice_status: () => ({ supported: true, modelReady: true, downloading: false, state: 'idle' }),
+    });
+    await initVoice();
+    await emit('voice', { kind: 'append', text: 'ajoute un bouton' });
+    await waitFor(() => expect(textarea.value).toBe('ajoute un bouton'));
+    await emit('voice', {
+      kind: 'finish',
+      text: 'en haut',
+      context: '[Contexte : 1 capture]',
+      frames: [{ name: 'capture-1.jpg', mediaType: 'image/jpeg', data: 'AAAA' }],
+      send: true,
+    });
+    await waitFor(() => expect(backend.called('send_message')).toHaveLength(1));
+    expect(backend.called('send_message')[0].args).toEqual({
+      id: a.id,
+      text: 'ajoute un bouton en haut\n\n[Contexte : 1 capture]',
+      attachments: [{ name: 'capture-1.jpg', mediaType: 'image/jpeg', data: 'AAAA' }],
+    });
   });
 });

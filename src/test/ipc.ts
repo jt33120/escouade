@@ -42,6 +42,11 @@ export const SETTINGS: Settings = {
   noProxy: 'localhost',
   proxyTerminals: false,
   autoResume: true,
+  voiceEnabled: false,
+  voiceShortcut: 'Alt+Space',
+  voiceLanguage: 'fr',
+  voiceHandsFree: false,
+  voiceSpeak: false,
 };
 
 export function project(over: Partial<Project> = {}): Project {

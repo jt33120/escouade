@@ -22,11 +22,13 @@
   import TitleBar from './components/TitleBar.svelte';
   import Toasts from './components/Toasts.svelte';
   import Welcome from './components/Welcome.svelte';
+  import { initVoice } from './lib/voice.svelte';
 
   let initError = $state<string | null>(null);
 
   onMount(() => {
     app.init().catch((e) => (initError = String(e)));
+    initVoice();
     if (import.meta.env.PROD) setTimeout(() => checkForUpdate(), 8000);
   });
 

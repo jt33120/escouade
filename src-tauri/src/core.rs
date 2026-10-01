@@ -695,6 +695,10 @@ impl<R: Runtime> Core<R> {
         if settings.sound {
             notify::play_chime();
         }
+        #[cfg(target_os = "macos")]
+        if matches!(kind, NotifyKind::Done) && settings.voice_speak {
+            self.speak_last_answer(agent_id);
+        }
         if notify::window_attended(&self.app) {
             return;
         }
@@ -726,6 +730,27 @@ impl<R: Runtime> Core<R> {
                     }
                 },
             );
+        }
+    }
+
+    /// Voice feedback: the first sentence of the agent's last answer, read aloud.
+    #[cfg(target_os = "macos")]
+    fn speak_last_answer(&self, agent_id: &str) {
+        use tauri::Manager;
+        let Some(voice) = self.app.try_state::<Arc<crate::voice::Voice>>() else {
+            return;
+        };
+        let Ok(h) = self.agent(agent_id) else { return };
+        let last = h
+            .lock()
+            .conv
+            .items()
+            .into_iter()
+            .rev()
+            .find(|i| i["kind"] == "text" && i["streaming"] != true && i["parent"].is_null())
+            .and_then(|i| i["text"].as_str().map(str::to_string));
+        if let Some(text) = last {
+            voice.speak_summary(&text);
         }
     }
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Escouade utilise le micro pour la dictée vocale (transcription locale, rien n'est envoyé).</string>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>Escouade lit l'adresse de l'onglet du navigateur au premier plan pour la joindre à tes messages vocaux.</string>
+</dict>
+</plist>

@@ -19,6 +19,15 @@ export interface Settings {
   proxyTerminals: boolean;
   /** Send "continue" by itself to an agent stopped by the usage limit, once the quota resets. */
   autoResume: boolean;
+  /** Voice mode (macOS only). */
+  voiceEnabled: boolean;
+  /** Hold to record, release to transcribe, e.g. "Alt+Space". */
+  voiceShortcut: string;
+  voiceLanguage: string;
+  /** Listen continuously for the wake word "Escouade". */
+  voiceHandsFree: boolean;
+  /** Read the first sentence of an agent's answer aloud. */
+  voiceSpeak: boolean;
 }
 
 export interface Project {

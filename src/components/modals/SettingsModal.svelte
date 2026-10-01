@@ -4,6 +4,7 @@
   import { app } from '../../lib/state.svelte';
   import { checkForUpdate } from '../../lib/updater';
   import { isMac } from '../../lib/platform';
+  import { downloadVoiceModel, voice } from '../../lib/voice.svelte';
   import type { Settings } from '../../lib/types';
   import Modal from './Modal.svelte';
 
@@ -124,6 +125,68 @@
       ></button>
     </div>
   </section>
+
+  {#if voice.supported}
+    <section>
+      <h3>Voix</h3>
+      <div class="toggle">
+        <span>Activer le mode vocal <em>(micro et transcription locale, rien n'est envoyé hors de ta machine)</em></span>
+        <button
+          class="switch"
+          role="switch"
+          aria-checked={s.voiceEnabled}
+          class:on={s.voiceEnabled}
+          aria-label="Mode vocal"
+          onclick={() => (s.voiceEnabled = !s.voiceEnabled)}
+        ></button>
+      </div>
+      <label class="f">
+        <span>Raccourci maintenu pour dicter <em>(ex. Alt+Space, Ctrl+Shift+D)</em></span>
+        <input class="field mono" style="width:200px" bind:value={s.voiceShortcut} />
+      </label>
+      <label class="f">
+        <span>Langue <em>(code Whisper : fr, en… ; auto = détection)</em></span>
+        <input class="field mono" style="width:120px" bind:value={s.voiceLanguage} />
+      </label>
+      <div class="toggle">
+        <span>Mains libres <em>(écoute en continu ; « Escouade … envoie » envoie, « annule » abandonne)</em></span>
+        <button
+          class="switch"
+          role="switch"
+          aria-checked={s.voiceHandsFree}
+          class:on={s.voiceHandsFree}
+          aria-label="Mains libres"
+          onclick={() => (s.voiceHandsFree = !s.voiceHandsFree)}
+        ></button>
+      </div>
+      <div class="toggle">
+        <span>Lire à voix haute la première phrase de la réponse de l'agent</span>
+        <button
+          class="switch"
+          role="switch"
+          aria-checked={s.voiceSpeak}
+          class:on={s.voiceSpeak}
+          aria-label="Retour vocal"
+          onclick={() => (s.voiceSpeak = !s.voiceSpeak)}
+        ></button>
+      </div>
+      <div class="toggle">
+        <span>
+          Modèle de transcription <em>(Whisper large-v3-turbo, environ 570 Mo)</em> :
+          {#if voice.modelReady}prêt{:else if voice.downloading}téléchargement {Math.round(voice.progress * 100)} %{:else}non téléchargé{/if}
+        </span>
+        {#if !voice.modelReady}
+          <button class="btn small" disabled={voice.downloading} onclick={() => app.run(downloadVoiceModel())}>
+            {voice.downloading ? 'Téléchargement…' : 'Télécharger'}
+          </button>
+        {/if}
+      </div>
+      <p class="note">
+        Au premier usage macOS demande l'accès au micro, à l'enregistrement de l'écran (contexte visuel) et à l'automatisation du navigateur
+        (lecture de l'URL locale).
+      </p>
+    </section>
+  {/if}
 
   <section>
     <h3>Réseau</h3>

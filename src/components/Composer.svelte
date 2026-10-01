@@ -6,7 +6,7 @@
 </script>
 
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { ACCEPT, MAX_TOTAL, readAttachment, sizeLabel } from '../lib/attachments';
   import { applyCompletion, detectTrigger, filterCommands, type Trigger } from '../lib/complete';
   import { conversationOf } from '../lib/conversations.svelte';
@@ -16,6 +16,7 @@
   import { EFFORTS, MODELS, MODES, supportsAuto, supportsEffort } from '../lib/models';
   import { observeWidth } from '../lib/resize';
   import { app } from '../lib/state.svelte';
+  import { onVoiceInput, type VoiceInput } from '../lib/voice.svelte';
   import type { Agent, QuestionItem } from '../lib/types';
   import Dropdown from './Dropdown.svelte';
 
@@ -253,6 +254,29 @@
       addFiles(list);
     }
   }
+
+  // Dictation: the backend hands over text, then the screen frames chosen for it. Only the
+  // composer of the agent on screen listens.
+  function onVoice(i: VoiceInput) {
+    if (app.agent?.id !== agent.id) return;
+    if (i.kind === 'clear') {
+      text = '';
+      files = [];
+    } else if (i.kind === 'append') {
+      text = text && !/\s$/.test(text) ? `${text} ${i.text}` : text + i.text;
+    } else {
+      let t = text.trimEnd();
+      if (i.text) t = t ? `${t} ${i.text}` : i.text;
+      if (i.context) t = t ? `${t}\n\n${i.context}` : i.context;
+      text = t;
+      for (const f of i.frames) {
+        files.push({ kind: 'image', name: f.name, mediaType: f.mediaType, data: f.data, size: Math.floor(f.data.length * 0.75), url: `data:${f.mediaType};base64,${f.data}` });
+      }
+      if (i.send) send();
+    }
+    queueMicrotask(autosize);
+  }
+  onMount(() => onVoiceInput(onVoice));
 
   async function send() {
     const body = text.trim();

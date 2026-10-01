@@ -30,6 +30,15 @@ pub struct Settings {
     pub proxy_terminals: bool,
     /// Send "continue" by itself to an agent stopped by the usage limit, once the quota resets.
     pub auto_resume: bool,
+    /// Voice mode (macOS): push-to-talk dictation with a local Whisper model.
+    pub voice_enabled: bool,
+    /// Hold to record, release to transcribe, e.g. `Alt+Space`.
+    pub voice_shortcut: String,
+    pub voice_language: String,
+    /// Listen continuously and wait for the wake word "Escouade".
+    pub voice_hands_free: bool,
+    /// Read the first sentence of the agent's answer aloud when it finishes.
+    pub voice_speak: bool,
 }
 
 impl Settings {
@@ -70,6 +79,11 @@ impl Default for Settings {
             no_proxy: "localhost,127.0.0.1".into(),
             proxy_terminals: false,
             auto_resume: true,
+            voice_enabled: false,
+            voice_shortcut: "Alt+Space".into(),
+            voice_language: "fr".into(),
+            voice_hands_free: false,
+            voice_speak: false,
         }
     }
 }

@@ -10,7 +10,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::ipc::{Channel, InvokeResponseBody};
-use tauri::State;
+use tauri::{Manager, State};
 
 type Res<T> = Result<T, String>;
 type CoreState<'a> = State<'a, Arc<Core>>;
@@ -61,8 +61,14 @@ pub fn set_ui(core: CoreState, ui: UiState) {
 }
 
 #[tauri::command(async)]
-pub fn save_settings(core: CoreState, settings: Settings) -> Res<Vec<ShellInfo>> {
+pub fn save_settings(core: CoreState, app: tauri::AppHandle, settings: Settings) -> Res<Vec<ShellInfo>> {
     core.save_settings(settings.clone()).map_err(err)?;
+    #[cfg(target_os = "macos")]
+    if let Some(v) = app.try_state::<Arc<crate::voice::Voice>>() {
+        v.apply_settings(&settings);
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = app;
     Ok(pty::detect_shells(&settings))
 }
 
@@ -509,4 +515,40 @@ pub fn quit_app(core: CoreState, app: tauri::AppHandle) {
 #[tauri::command]
 pub async fn set_remote_control(core: CoreState<'_>, id: String, enabled: bool) -> Res<()> {
     core.set_remote_control(&id, enabled).await.map_err(err)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoiceStatus {
+    /// False off macOS: the UI hides the voice mode.
+    supported: bool,
+    model_ready: bool,
+    downloading: bool,
+    state: String,
+}
+
+#[tauri::command]
+pub fn voice_status(app: tauri::AppHandle) -> VoiceStatus {
+    #[cfg(target_os = "macos")]
+    if let Some(v) = app.try_state::<Arc<crate::voice::Voice>>() {
+        return VoiceStatus {
+            supported: true,
+            model_ready: v.model_ready(),
+            downloading: v.downloading(),
+            state: v.state().to_string(),
+        };
+    }
+    let _ = app;
+    VoiceStatus { supported: false, model_ready: false, downloading: false, state: "off".into() }
+}
+
+/// Downloads the speech model (progress comes as "voice" events).
+#[tauri::command]
+pub fn voice_download_model(app: tauri::AppHandle) {
+    #[cfg(target_os = "macos")]
+    if let Some(v) = app.try_state::<Arc<crate::voice::Voice>>() {
+        v.download_model();
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = app;
 }

@@ -19,6 +19,8 @@ mod pty;
 mod resources;
 mod stats;
 mod usage;
+#[cfg(target_os = "macos")]
+mod voice;
 
 use crate::core::Core;
 use std::io::Write;
@@ -131,7 +133,9 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build());
     #[cfg(target_os = "macos")]
-    let builder = builder.plugin(tauri_plugin_notification::init());
+    let builder = builder
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
     builder
         .setup(|app| {
             init_logging();
@@ -146,6 +150,12 @@ pub fn run() {
             app.manage(core.clone());
             build_tray(app)?;
             core.start(git_rx);
+            #[cfg(target_os = "macos")]
+            {
+                let voice = voice::Voice::new(app.handle().clone());
+                app.manage(voice.clone());
+                voice.apply_settings(&core.settings.read());
+            }
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.show();
                 let _ = w.set_focus();
@@ -206,6 +216,8 @@ pub fn run() {
             commands::term_kill,
             commands::play_chime,
             commands::quit_app,
+            commands::voice_status,
+            commands::voice_download_model,
         ])
         .build(tauri::generate_context!())
         .expect("error while building the application")
