@@ -8,6 +8,7 @@
   import { expectStops, forgetLaunches } from '../lib/launch-actions';
   import { closeTerminal } from '../lib/term-actions';
   import { PROJECT_COLORS } from '../lib/theme';
+  import { isMac } from '../lib/platform';
   import type { Project } from '../lib/types';
 
   const win = getCurrentWindow();
@@ -119,7 +120,7 @@
   }
 </script>
 
-<header class="bar" data-tauri-drag-region>
+<header class="bar" class:mac={isMac} data-tauri-drag-region>
   <div class="brand" data-tauri-drag-region>
     <img class="mark" src="/logo.svg" alt="Escouade" draggable="false" />
   </div>
@@ -192,6 +193,7 @@
       Stats
     </button>
   </div>
+  {#if !isMac}
   <div class="controls">
     <button class="ctl" title="Réduire" aria-label="Réduire" onclick={() => win.minimize()}>
       <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 5h10" stroke="currentColor" stroke-width="1" /></svg>
@@ -211,9 +213,14 @@
       <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1" /></svg>
     </button>
   </div>
+  {/if}
 </header>
 
 <style>
+  /* macOS: room for the native traffic lights drawn over the bar. */
+  .bar.mac {
+    padding-left: 84px;
+  }
   .bar {
     height: 46px;
     flex: none;

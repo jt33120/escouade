@@ -55,6 +55,8 @@ impl ClaudeProcess {
         }
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
+        #[cfg(unix)]
+        cmd.process_group(0);
 
         let mut child = cmd
             .spawn()
@@ -63,6 +65,10 @@ impl ClaudeProcess {
         #[cfg(windows)]
         if let (Some(j), Some(h)) = (&job, child.raw_handle()) {
             j.assign_handle(h);
+        }
+        #[cfg(unix)]
+        if let (Some(j), Some(pid)) = (&job, child.id()) {
+            j.assign_pid(pid);
         }
         let mut stdin = child.stdin.take().context("stdin")?;
         let stdout = child.stdout.take().context("stdout")?;
@@ -286,6 +292,18 @@ pub fn resolve_binary(configured: &str) -> Option<PathBuf> {
         }
     }
     let home = dirs::home_dir()?;
+    #[cfg(unix)]
+    {
+        return [
+            home.join(".local").join("bin").join("claude"),
+            home.join(".claude").join("local").join("claude"),
+            PathBuf::from("/opt/homebrew/bin/claude"),
+            PathBuf::from("/usr/local/bin/claude"),
+        ]
+        .into_iter()
+        .find(|p| p.is_file());
+    }
+    #[cfg(not(unix))]
     [
         home.join(".local").join("bin").join("claude.exe"),
         home.join(".claude").join("local").join("claude.exe"),

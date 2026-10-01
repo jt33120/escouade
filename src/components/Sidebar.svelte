@@ -104,7 +104,7 @@
   function shellMenu() {
     if (!termMenuBtn) return;
     if (!app.shells.length) {
-      app.toast('Aucun shell détecté (PowerShell 7, Git Bash, WSL). Vérifie les réglages.', 'error');
+      app.toast('Aucun shell détecté. Vérifie les réglages.', 'error');
       return;
     }
     menu.showAt(

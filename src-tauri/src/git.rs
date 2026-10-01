@@ -61,10 +61,18 @@ async fn run_net(cwd: &str, args: &[&str], background: bool) -> Result<Vec<u8>> 
     } else {
         None
     };
+    #[cfg(unix)]
+    if job.is_some() {
+        cmd.process_group(0);
+    }
     let child = cmd.spawn()?;
     #[cfg(windows)]
     if let (Some(j), Some(h)) = (&job, child.raw_handle()) {
         j.assign_handle(h);
+    }
+    #[cfg(unix)]
+    if let (Some(j), Some(pid)) = (&job, child.id()) {
+        j.assign_pid(pid);
     }
     let limit = if background {
         NET_TIMEOUT_BACKGROUND

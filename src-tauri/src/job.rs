@@ -168,18 +168,46 @@ mod imp {
 
 #[cfg(not(windows))]
 mod imp {
-    pub struct Job;
+    //! Unix: the process is started as the leader of its own process group
+    //! (`process_group(0)` / `setsid`), and the group is killed with it.
+    use std::sync::atomic::{AtomicI32, Ordering};
+
+    pub struct Job {
+        pgid: AtomicI32,
+    }
 
     impl Job {
         pub fn new() -> Option<Self> {
-            None
+            Some(Job {
+                pgid: AtomicI32::new(0),
+            })
         }
         pub fn assign_handle(&self, _process: *mut std::ffi::c_void) -> bool {
             false
         }
-        pub fn terminate(&self) {}
+        /// `pid` leads its own process group: the group is this job.
+        pub fn assign_pid(&self, pid: u32) -> bool {
+            self.pgid.store(pid as i32, Ordering::Release);
+            pid > 0
+        }
+        /// Kills every process of the group.
+        pub fn terminate(&self) {
+            let pgid = self.pgid.swap(0, Ordering::AcqRel);
+            if pgid > 0 {
+                // SAFETY: plain syscall; a group that no longer exists only yields ESRCH.
+                unsafe {
+                    libc::killpg(pgid, libc::SIGKILL);
+                }
+            }
+        }
         pub fn usage(&self) -> Option<super::JobUsage> {
             None
+        }
+    }
+
+    impl Drop for Job {
+        fn drop(&mut self) {
+            self.terminate();
         }
     }
 }

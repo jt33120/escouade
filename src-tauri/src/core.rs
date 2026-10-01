@@ -739,6 +739,10 @@ impl<R: Runtime> Core<R> {
         if self.waiting.swap(n, Ordering::AcqRel) == n {
             return;
         }
+        #[cfg(target_os = "macos")]
+        if let Some(w) = tauri::Manager::get_webview_window(&self.app, "main") {
+            let _ = w.set_badge_count((n > 0).then_some(n as i64));
+        }
         if let Some(tray) = self.app.tray_by_id("main") {
             let _ = tray.set_icon(notify::tray_icon(&self.app, n));
             let tip = match n {

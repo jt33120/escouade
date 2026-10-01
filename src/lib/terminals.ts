@@ -1,5 +1,6 @@
 // xterm.js instances live outside of components so switching views keeps their scrollback.
 
+import { isMac } from './platform';
 import { Terminal, type ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
@@ -116,6 +117,16 @@ function createXTerm(readOnly: boolean): XTerm {
     if (e.type !== 'keydown') return true;
     // Navigation shortcuts go to the app (the event keeps bubbling to its window handler).
     if (isAppShortcut(e)) return false;
+    // macOS conventions: Cmd+C copies, Cmd+V pastes; every Ctrl key goes to the shell.
+    if (isMac) {
+      if (e.metaKey && e.key.toLowerCase() === 'c') {
+        if (term.hasSelection()) navigator.clipboard.writeText(term.getSelection());
+        return false;
+      }
+      if (e.metaKey && e.key.toLowerCase() === 'v') return false;
+      if (e.metaKey) return false;
+      return !readOnly || (e.shiftKey && SCROLL_KEYS.has(e.key));
+    }
     // Windows Terminal conventions: Ctrl+C copies when there is a selection, Ctrl+V pastes.
     if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'c' && term.hasSelection()) {
       navigator.clipboard.writeText(term.getSelection());

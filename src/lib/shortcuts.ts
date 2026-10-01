@@ -1,5 +1,6 @@
 // Global keyboard shortcuts, routed in one place.
 
+import { modKey } from './platform';
 import { app } from './state.svelte';
 
 /**
@@ -16,14 +17,14 @@ function digit(e: KeyboardEvent): number | null {
  * with the shell; Ctrl+J is only a line feed there, which Enter already sends.
  */
 export function isAppShortcut(e: KeyboardEvent): boolean {
-  if (!e.ctrlKey || e.altKey) return false;
+  if (!modKey(e) || e.altKey) return false;
   return digit(e) !== null || e.key === 'Tab' || e.key === ',' || e.key.toLowerCase() === 'j';
 }
 
 /** Runs the shortcut matching `e`. Returns true when the event was handled. */
 export function handleShortcut(e: KeyboardEvent): boolean {
   // Ctrl+Alt is AltGr on French keyboards (e.g. AltGr+2 = ~): never a shortcut.
-  if (!e.ctrlKey || e.altKey || app.modal) return false;
+  if (!modKey(e) || e.altKey || app.modal) return false;
   const k = e.key.toLowerCase();
   const n = digit(e);
   if (n !== null && !e.shiftKey) {

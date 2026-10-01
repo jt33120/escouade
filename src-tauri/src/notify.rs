@@ -64,6 +64,20 @@ pub fn play_chime() {
             );
         }
     }
+    #[cfg(target_os = "macos")]
+    {
+        // Written once to a temp file, played by the system's `afplay`.
+        let path = std::env::temp_dir().join("escouade-chime.wav");
+        if !path.exists() {
+            let _ = std::fs::write(&path, chime_wav());
+        }
+        let _ = std::process::Command::new("/usr/bin/afplay")
+            .arg(&path)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn();
+    }
 }
 
 pub fn window_attended<R: Runtime>(app: &AppHandle<R>) -> bool {
@@ -119,7 +133,17 @@ pub fn toast<R: Runtime>(
             log::warn!("toast failed: {e:?}");
         }
     }
-    #[cfg(not(windows))]
+    // macOS: a Notification Center banner. Clicking it brings the app to the front (the
+    // click callback itself is not available there).
+    #[cfg(target_os = "macos")]
+    {
+        use tauri_plugin_notification::NotificationExt;
+        let _ = on_click;
+        if let Err(e) = app.notification().builder().title(title).body(body).show() {
+            log::warn!("notification failed: {e:?}");
+        }
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
     let _ = (app, title, body, on_click);
 }
 

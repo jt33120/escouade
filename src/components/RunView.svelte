@@ -89,7 +89,7 @@
     class="box"
     bind:this={box}
     onkeydown={(e) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         searchOpen = true;
       }

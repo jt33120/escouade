@@ -120,7 +120,7 @@ pub fn run() {
             notify::show_main(app)
         }));
     }
-    builder
+    let builder = builder
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(StateFlags::all() & !StateFlags::VISIBLE)
@@ -129,7 +129,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build());
+    #[cfg(target_os = "macos")]
+    let builder = builder.plugin(tauri_plugin_notification::init());
+    builder
         .setup(|app| {
             init_logging();
             for note in paths::take_migration_notes() {
@@ -207,6 +210,11 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building the application")
         .run(|app, event| {
+            // macOS: clicking the Dock icon brings back the hidden window.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
+                notify::show_main(app);
+            }
             if let tauri::RunEvent::Exit = event {
                 if let Some(core) = app.try_state::<Arc<Core>>() {
                     if !core.quitting.load(Ordering::Acquire) {

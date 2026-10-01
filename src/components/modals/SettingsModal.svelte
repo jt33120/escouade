@@ -3,6 +3,7 @@
   import { EFFORTS, MODELS, MODES } from '../../lib/models';
   import { app } from '../../lib/state.svelte';
   import { checkForUpdate } from '../../lib/updater';
+  import { isMac } from '../../lib/platform';
   import type { Settings } from '../../lib/types';
   import Modal from './Modal.svelte';
 
@@ -153,6 +154,9 @@
 
   <section>
     <h3>Terminaux</h3>
+    {#if isMac}
+    <label class="f"><span>Shell supplémentaire <em>(chemin, vide = $SHELL, zsh, bash)</em></span><input class="field mono" bind:value={s.bashPath} /></label>
+    {:else}
     <label class="f"><span>PowerShell 7 <em>(vide = auto)</em></span><input class="field mono" bind:value={s.pwshPath} /></label>
     <label class="f"><span>Git Bash <em>(vide = auto)</em></span><input class="field mono" bind:value={s.bashPath} /></label>
     <label class="f"
@@ -162,6 +166,7 @@
         placeholder="Ubuntu"
       /></label
     >
+    {/if}
     <div class="detected">
       Détectés : {app.shells.map((x) => x.label).join(', ') || 'aucun'}
     </div>

@@ -2,9 +2,15 @@
 
 import { relaunch } from '@tauri-apps/plugin-process';
 import { check } from '@tauri-apps/plugin-updater';
+import { isMac } from './platform';
 import { app } from './state.svelte';
 
 export async function checkForUpdate(manual = false): Promise<boolean> {
+  // macOS port: no signed release feed of its own; update with git pull + rebuild.
+  if (isMac) {
+    if (manual) app.toast('Mises à jour automatiques désactivées sur la version Mac (git pull puis rebuild).', 'info');
+    return false;
+  }
   try {
     const proxy = app.settings.proxyUrl?.trim() || undefined;
     const update = await check({ proxy, timeout: 20000 });

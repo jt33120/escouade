@@ -78,8 +78,48 @@ fn first_installed(candidates: impl IntoIterator<Item = PathBuf>) -> Option<Path
     candidates.into_iter().find(|p| installed(p))
 }
 
+#[cfg(windows)]
 pub fn detect_shells(s: &Settings) -> Vec<ShellInfo> {
     detect_shells_in(&ShellRoots::from_env(), s)
+}
+
+/// macOS / Linux: the user's login shell first ($SHELL), then zsh and bash.
+#[cfg(not(windows))]
+pub fn detect_shells(s: &Settings) -> Vec<ShellInfo> {
+    let mut out: Vec<ShellInfo> = Vec::new();
+    let mut push = |p: PathBuf| {
+        let Some(name) = p.file_name().map(|n| n.to_string_lossy().into_owned()) else {
+            return;
+        };
+        let id = match name.as_str() {
+            "zsh" => "zsh",
+            "bash" => "bash",
+            "fish" => "fish",
+            _ => "sh",
+        };
+        if installed(&p) && !out.iter().any(|x| x.id == id) {
+            let label = match id {
+                "zsh" => "zsh",
+                "bash" => "bash",
+                "fish" => "fish",
+                _ => "sh",
+            };
+            out.push(ShellInfo {
+                id: id.into(),
+                label: label.into(),
+                path: p.to_string_lossy().into(),
+            });
+        }
+    };
+    if !s.bash_path.is_empty() {
+        push(PathBuf::from(&s.bash_path));
+    }
+    if let Some(sh) = std::env::var_os("SHELL") {
+        push(PathBuf::from(sh));
+    }
+    push(PathBuf::from("/bin/zsh"));
+    push(PathBuf::from("/bin/bash"));
+    out
 }
 
 pub fn detect_shells_in(r: &ShellRoots, s: &Settings) -> Vec<ShellInfo> {
@@ -162,9 +202,11 @@ fn tree_job(child: &dyn portable_pty::Child) -> Option<Job> {
     job.assign_handle(child.as_raw_handle()?).then_some(job)
 }
 
+/// The shell leads its own session (portable-pty calls `setsid`): its process group is the job.
 #[cfg(not(windows))]
-fn tree_job(_child: &dyn portable_pty::Child) -> Option<Job> {
-    None
+fn tree_job(child: &dyn portable_pty::Child) -> Option<Job> {
+    let job = Job::new()?;
+    job.assign_pid(child.process_id()?).then_some(job)
 }
 
 /// Working folder of a launch command: the project's, or one of its folders.
@@ -275,6 +317,10 @@ impl PtyManager {
                 // Git Bash stays in the working directory instead of going home.
                 cmd.env("CHERE_INVOKING", "1");
             }
+            ("zsh" | "sh" | "fish", run) => match run {
+                None => cmd.args(["-l", "-i"]),
+                Some(c) => cmd.args(["-l", "-c", c]),
+            },
             ("wsl", run) => {
                 if !wsl_distro.is_empty() {
                     cmd.args(["-d", wsl_distro]);
